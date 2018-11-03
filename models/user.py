@@ -1,7 +1,8 @@
-from clcrypto import check_password, password_hash, generate_salt
+from clcrypto import check_password, password_hash
 
 
 class User(object):
+
     __id = None
     username = None
     __hashed_password = None
@@ -22,6 +23,7 @@ class User(object):
         return self.__hashed_password
 
     def set_password(self, password, salt):
+        """Sets hashed password"""
         self.__hashed_password = password_hash(password, salt)
 
     def save_to_db(self, cursor):
@@ -31,7 +33,7 @@ class User(object):
                      VALUES (%s, %s, %s) RETURNING id;"""
             values = (self.username, self.email, self.hashed_password)
             cursor.execute(sql, values)
-            self.__id = cursor.fetchone()[0]  # albo cursor.fetchone()['id']
+            self.__id = cursor.fetchone()[0]  # or cursor.fetchone()['id']
             return True
         else:
             sql = """UPDATE Users SET username=%s, email=%s, hashed_password=%s
@@ -43,7 +45,7 @@ class User(object):
     @staticmethod
     def load_user_by_id(cursor, user_id):
         sql = "SELECT id, username, email, hashed_password FROM users WHERE id=%s"
-        cursor.execute(sql, (user_id,))  # (user_id, ) - bo tworzymy krotke
+        cursor.execute(sql, (user_id,))
         data = cursor.fetchone()
         if data:
             loaded_user = User()
@@ -70,7 +72,43 @@ class User(object):
         return ret
 
     def delete(self, cursor):
+        """Delete selected user from database"""
         sql = "DELETE FROM Users WHERE id=%s"
         cursor.execute(sql, (self.__id,))
         self.__id = -1
         return True
+
+    @staticmethod
+    def get_id(username, cursor):
+        """Check if user is in database and returns it's ID. If user not present in database returns new user id = -1"""
+        sql = "SELECT id FROM users WHERE username=%s"
+        cursor.execute(sql, (username,))
+        if cursor.rowcount > 0:
+            user_id = cursor.fetchone()[0]
+            return user_id
+        else:
+            return -1
+
+    @staticmethod
+    def get_id_by_email(email, cursor):
+        """Check if users email is in database and returns it's ID. If email not present in database returns
+        new user id = -1"""
+        sql = "SELECT id FROM users WHERE email=%s"
+        cursor.execute(sql, (email,))
+        if cursor.rowcount > 0:
+            user_id = cursor.fetchone()[0]
+            return user_id
+        else:
+            return -1
+
+    @staticmethod
+    def check_and_load_user(cursor, username, password):
+        user_id = User.get_id(username, cursor)
+        if user_id != -1:
+            user = User.load_user_by_id(cursor, user_id)
+            if check_password(password, user.hashed_password):
+                return user
+            else:
+                return None
+        else:
+            return None
