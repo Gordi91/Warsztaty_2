@@ -51,7 +51,7 @@ def user_operations():
                     for message in messages:
                         message_table += "{} | {} | {} | {} \n"
                         message_table = message_table.format(message.id,
-                                                             message.to_id,
+                                                             message.to_user.email,
                                                              message.text,
                                                              message.creation_date.strftime("%b %d %Y %H:%M:%S"))
                     print(message_table)
