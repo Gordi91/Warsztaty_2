@@ -1,12 +1,11 @@
 from models.user import User
 from models.sql_connection import create_connection, close_connection
-from clcrypto import generate_salt
 from psycopg2 import IntegrityError
 import argparse
 
 
 HELP_MESSAGE = """Help:
--u - username
+-u - username-u
 -p - password
 -a - email
 -l - list
@@ -61,8 +60,7 @@ def user_operations():
         user = User.check_and_load_user(cursor, args.username[0], args.password[0])
         if user:
             if len(args.new_pass[0]) >= 8:
-                salt = generate_salt()
-                user.set_password(args.new_pass[0], salt)
+                user.set_password(args.new_pass[0])
                 user.save_to_db(cursor)
                 print("Password changed")
             else:
@@ -94,10 +92,8 @@ def user_operations():
 
 
 def create_user(username, password, email):
-    new_user = User()
-    new_user.username = username
-    new_user.email = email
-    new_user.set_password(password, generate_salt())
+    new_user = User(username, email)
+    new_user.set_password(password)
     cnx, cursor = create_connection()
     try:
         new_user.save_to_db(cursor)

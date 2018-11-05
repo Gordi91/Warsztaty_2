@@ -60,12 +60,10 @@ def user_operations():
 
             elif args.send and args.to and not args.list:
                 if args.send[0] != "":
-                    consignee_id = User.get_id_by_email(args.to[0], cursor)
-                    if consignee_id != -1:
-                        new_message = Message()
-                        new_message.from_id = user.id
-                        new_message.to_id = consignee_id
-                        new_message.text = args.send[0]
+                    print(args.to[0])
+                    consignee = User.load_user_by_email(cursor, args.to[0])
+                    if consignee:
+                        new_message = Message(user, consignee, args.send[0])
                         new_message.save_to_db(cursor)
                         print("Message sent")
                     else:

@@ -8,10 +8,10 @@ class User(object):
     __hashed_password = None
     email = None
 
-    def __init__(self):
+    def __init__(self, username, email):
         self.__id = -1
-        self.username = ""
-        self.email = ""
+        self.username = username
+        self.email = email
         self.__hashed_password = ""
 
     @property
@@ -22,9 +22,9 @@ class User(object):
     def hashed_password(self):
         return self.__hashed_password
 
-    def set_password(self, password, salt):
+    def set_password(self, password):
         """Sets hashed password"""
-        self.__hashed_password = password_hash(password, salt)
+        self.__hashed_password = password_hash(password)
 
     def save_to_db(self, cursor):
         if self.__id == -1:
@@ -43,16 +43,32 @@ class User(object):
             return True
 
     @staticmethod
+    def load_user(data):
+        """Extract data from row of sql select query with id, username, to_id,
+        text, creation_date columns and load user"""
+        loaded_user = User(data[1], data[2])
+        loaded_user.__id = data[0]
+        loaded_user.__hashed_password = data[3]
+        return loaded_user
+
+    @staticmethod
     def load_user_by_id(cursor, user_id):
         sql = "SELECT id, username, email, hashed_password FROM users WHERE id=%s"
         cursor.execute(sql, (user_id,))
         data = cursor.fetchone()
         if data:
-            loaded_user = User()
-            loaded_user.__id = data[0]
-            loaded_user.username = data[1]
-            loaded_user.email = data[2]
-            loaded_user.__hashed_password = data[3]
+            loaded_user = User.load_user(data)
+            return loaded_user
+        else:
+            return None
+
+    @staticmethod
+    def load_user_by_email(cursor, user_id):
+        sql = "SELECT id, username, email, hashed_password FROM users WHERE email=%s"
+        cursor.execute(sql, (user_id,))
+        data = cursor.fetchone()
+        if data:
+            loaded_user = User.load_user(data)
             return loaded_user
         else:
             return None
@@ -63,11 +79,7 @@ class User(object):
         ret = []
         cursor.execute(sql)
         for row in cursor.fetchall():
-            loaded_user = User()
-            loaded_user.__id = row[0]
-            loaded_user.username = row[1]
-            loaded_user.email = row[2]
-            loaded_user.__hashed_password = row[3]
+            loaded_user = User.load_user(row)
             ret.append(loaded_user)
         return ret
 

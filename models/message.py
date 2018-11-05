@@ -1,16 +1,19 @@
+from models.user import User
+
+
 class Message:
     __id = None
-    from_id = None
+    from_user = None
     to_id = None
     text = None
     __creation_date = None
 
-    def __init__(self):
+    def __init__(self, from_user, to_user, text):
         self.__id = -1
-        self.from_id = ""
-        self.to_id = ""
-        self.text = ""
-        self.__creation_date = ""
+        self.from_user = from_user
+        self.to_user = to_user
+        self.text = text
+        self.__creation_date = None
 
     @property
     def id(self):
@@ -21,17 +24,20 @@ class Message:
         return self.__creation_date
 
     @staticmethod
+    def load_message(cursor, data):
+        """Extract data from row of sql select query with id, from_id, to_id, text, creation_date columns"""
+        loaded_message = Message(data[1], User.load_user_by_id(cursor, data[2]), data[3])
+        loaded_message.__id = data[0]
+        loaded_message.__creation_date = data[4]
+        return loaded_message
+
+    @staticmethod
     def load_message_by_id(cursor, message_id):
         sql = "SELECT id, from_id, to_id, text, creation_date FROM messages WHERE id=%s"
         cursor.execute(sql, (message_id,))
         data = cursor.fetchone()
         if data:
-            loaded_message = Message()
-            loaded_message.__id = data[0]
-            loaded_message.from_id = data[1]
-            loaded_message.to_id = data[2]
-            loaded_message.text = data[3]
-            loaded_message.__creation_date = data[4]
+            loaded_message = Message.load_message(cursor, data)
             return loaded_message
         else:
             return None
@@ -42,12 +48,7 @@ class Message:
         ret = []
         cursor.execute(sql)
         for row in cursor.fetchall():
-            loaded_message = Message()
-            loaded_message.__id = row[0]
-            loaded_message.from_id = row[1]
-            loaded_message.to_id = row[2]
-            loaded_message.text = row[3]
-            loaded_message.__creation_date = row[4]
+            loaded_message = Message.load_message(cursor, row)
             ret.append(loaded_message)
         return ret
 
@@ -58,12 +59,7 @@ class Message:
         ret = []
         cursor.execute(sql, (user_id,))
         for row in cursor.fetchall():
-            loaded_message = Message()
-            loaded_message.__id = row[0]
-            loaded_message.from_id = row[1]
-            loaded_message.to_id = row[2]
-            loaded_message.text = row[3]
-            loaded_message.__creation_date = row[4]
+            loaded_message = Message.load_message(cursor, row)
             ret.append(loaded_message)
         return ret
 
@@ -72,7 +68,7 @@ class Message:
             # saving new instance using prepared statements
             sql = """INSERT INTO messages(from_id, to_id, text)
                      VALUES (%s, %s, %s) RETURNING id;"""
-            values = (self.from_id, self.to_id, self.text)
+            values = (self.from_user.id, self.to_user.id, self.text)
             cursor.execute(sql, values)
             self.__id = cursor.fetchone()[0]  # or cursor.fetchone()['id']
             return True
