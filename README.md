@@ -1,2 +1,2 @@
-# Warsztaty_2
-Simple user database (Active Record design pattern)
+# Simple terminal messenger
+Simple terminal messenger (Active Record design pattern) written in python
